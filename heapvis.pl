@@ -332,27 +332,22 @@ sub hexdump {
 	close $dumper;
 }
 
-my $heap = CSAPP::Heap->new(0xC0)->init(qw( END 16/11 32/11 16/11 8/10 56/01 32/10 16/01 8/10 END ));
+my $heap_4a = CSAPP::Heap->new(0xC0)->init(qw(
+	END 16/11 32/11 16/11 8/10 56/01 32/10 8/10 16/01 END
+));
 
-#say for $heap->tell();
-#hexdump $heap;
+{
+	my $heap = $heap_4a->clone;
+	$heap->free(0x50);
 
-my $mem = $heap->alloc(10);
-print sprintf "You had A piece of %02X\n", $mem;
-#say for $heap->tell();
-#hexdump $heap;
+	my $p7 = $heap->alloc(18);
+	print "p7 = alloc(18));\n";
+	print sprintf("p7 = 0x_%02x", $p7), "\n";
 
-my $other = $heap->clone();
+	print +("=" x 80), "\n";
+	say for $heap->tell;
+}
 
-$heap->imfree($mem);
-say for $heap->tell();
-hexdump $heap;
-
-$heap = $other;
-$heap->free($mem);
-say for $heap->tell();
-hexdump $heap;
-
-$heap->coalesce();
-say for $heap->tell();
-hexdump $heap;
+{
+	my $heap = $heap_4a->clone;
+}
