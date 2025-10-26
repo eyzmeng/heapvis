@@ -60,6 +60,7 @@ sub init ($heap, @chnks)
 
 	my $caps = length($$heap);
 	$size < $caps || carp "not enough: $size/$caps\n";
+	$heap
 }
 
 #
@@ -331,8 +332,7 @@ sub hexdump {
 	close $dumper;
 }
 
-my $heap = CSAPP::Heap->new(0xC0);
-$heap->init(qw( END 16/11 32/11 16/11 8/10 56/01 32/10 16/01 8/10 END ));
+my $heap = CSAPP::Heap->new(0xC0)->init(qw( END 16/11 32/11 16/11 8/10 56/01 32/10 16/01 8/10 END ));
 
 #say for $heap->tell();
 #hexdump $heap;
