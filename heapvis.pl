@@ -41,6 +41,11 @@ sub init ($heap, @chnks)
 			$heap->SETSIZ($addr, $size);
 			$heap->MKPLNK($addr, $pbit);
 			$heap->MKALNK($addr, $abit);
+
+			# Set footer if free
+			if (!$abit) {
+				$heap->SET($addr + $size - 4, $size);
+			}
 		}
 		else {
 			croak ("bad block spec: $chunk");
