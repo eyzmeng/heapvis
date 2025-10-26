@@ -429,3 +429,45 @@ say "**** 1A LOWER";
 	say for $heap->tell(@table);
 	hexdump $heap;
 }
+
+say "**** 1B UPPER";
+
+{
+	my $heap = $heap_1b->clone;
+	my @table = ();
+	say for $heap->tell(@table);
+	hexdump $heap;
+
+	# They are literally just swapped
+	# are you joking me ToT
+	my $p7 = $heap->alloc(18);
+	push @table, p7 => $p7;
+	print "p7 = alloc(18));\n";
+	print sprintf("p7 = 0x_%02x", $p7), "\n";
+
+	my $p8 = $heap->alloc(12);
+	push @table, p8 => $p8;
+	print "p8 = alloc(12);\n";
+	print sprintf("p8 = 0x_%02x", $p8), "\n";
+
+	my $p9 = $heap->alloc(8);
+	push @table, p9 => $p9;
+	print "p9 = alloc(8);\n";
+	print sprintf("p9 = 0x_%02x", $p9), "\n";
+
+say "**** 1B LOWER";
+
+	$heap->free(0x18);
+	$heap->free(0x60);
+	print "Pre coalescence\n";
+	print +("=" x 80), "\n";
+	say for $heap->tell(@table);
+	hexdump $heap;
+
+	$heap->coalesce();
+
+	print "Post coalescence\n";
+	print +("=" x 80), "\n";
+	say for $heap->tell(@table);
+	hexdump $heap;
+}
