@@ -116,6 +116,10 @@ sub tell ($heap)
 			carp(sprintf("warning: 0x%02X: p-bit should be %d, but found %d", $addr, $pbit, $bad));
 		}
 		$abit = $heap->ISALNK($init);
+		if (!$abit && (my $bad = $heap->GET($STOP - 4)) != $size) {
+			carp(sprintf("warning: 0x%02X: bad footer just before 0x%02X: " .
+				"should be %d, but found %d", $addr, $STOP, $size, $bad));
+		}
 
 		while ($addr < $STOP) {
 			# Print Size/Status
@@ -152,15 +156,62 @@ sub tell ($heap)
 	reverse @buf;
 }
 
-sub alloc ($heap, $s)
+sub alloc ($heap, $need)
+{
+	$need > 0 or croak "bad alloc size: $need";
+	# Round up, for double-word alignment
+	my $need_size = ($need + 7) & ~7;
+
+	my ($head, $caps, $size, $busy);
+	$caps = length($$heap) - 4;
+
+	my ($best_head, $best_size);
+	$best_head = 0;
+
+	for ($head = 4; $head < $caps; $head += $size) {
+		$size = $heap->GETSIZ($head);
+		$busy = $heap->ISALNK($head);
+
+		if (!$busy && $need <= $size) {
+			if (!$best_head || $size < $best_size) {
+				$best_head = $head;
+				$best_size = $size;
+			}
+		}
+	}
+
+	$best_head or return 0;
+
+	# Split free block, if needed
+	if ($need_size < $best_size) {
+		my $free_head = $best_head + $need_size;
+		my $free_foot = $best_head + $best_size - 4;
+		my $free_size = $best_size - $need_size;
+
+		# Set header
+		$heap->SETSIZ($free_head, $free_size);
+		$heap->MKALNK($free_head, 0);
+		$heap->MKPLNK($free_head, 1);
+
+		# Set footer
+		$heap->SET($free_foot, $free_size);
+	}
+	# The free block was Devoured, so expunge prev link
+	else {
+		my $next_head;
+		$heap->MKPLNK($next_head, 1);
+	}
+
+	$heap->SETSIZ($best_head, $need_size);
+	$heap->MKALNK($best_head, 1);
+	$best_head + 4;
+}
+
+sub free ($heap, $addr)
 {
 }
 
-sub free
-{
-}
-
-sub coalesce
+sub coalesce ($heap)
 {
 }
 
@@ -173,4 +224,11 @@ $heap->init(qw( END 16/11 32/11 16/11 8/10 56/01 32/10 16/01 8/10 END ));
 
 say for $heap->tell();
 
-say unpack "H*", $$heap;
+say ((unpack "H*", $$heap) =~ s/(.{40})/$1\n/rg);
+
+my $mem = $heap->alloc(10);
+print sprintf "You had A piece of %02X\n", $mem;
+say for $heap->tell();
+open my $dumper, '|od -Ax -tx4z -w16';
+print $dumper $$heap;
+close $dumper;
