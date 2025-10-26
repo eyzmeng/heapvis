@@ -455,6 +455,9 @@ say "**** 1B UPPER";
 	print "p9 = alloc(8);\n";
 	print sprintf("p9 = 0x_%02x", $p9), "\n";
 
+	say for $heap->tell(@table);
+	hexdump $heap;
+
 say "**** 1B LOWER";
 
 	$heap->free(0x18);
