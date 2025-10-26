@@ -357,7 +357,7 @@ say "**** 4A UPPER";
 
 	my $p8 = $heap->alloc(12);
 	push @table, p8 => $p8;
-	print "p8 = alloc(18));\n";
+	print "p8 = alloc(12);\n";
 	print sprintf("p8 = 0x_%02x", $p7), "\n";
 
 	print +("=" x 80), "\n";
