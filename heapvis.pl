@@ -343,6 +343,8 @@ my $heap_4a = CSAPP::Heap->new(0xC0)->init(qw(
 	END 16/11 32/11 16/11 8/10 56/01 32/10 8/00 16/01 END
 ));
 
+say "**** 4A UPPER";
+
 {
 	my $heap = $heap_4a->clone;
 	my @table = ();
@@ -353,11 +355,26 @@ my $heap_4a = CSAPP::Heap->new(0xC0)->init(qw(
 	print "p7 = alloc(18));\n";
 	print sprintf("p7 = 0x_%02x", $p7), "\n";
 
+	my $p8 = $heap->alloc(12);
+	push @table, p8 => $p8;
+	print "p8 = alloc(18));\n";
+	print sprintf("p8 = 0x_%02x", $p7), "\n";
+
 	print +("=" x 80), "\n";
 	say for $heap->tell(@table);
 	hexdump $heap;
-}
+#}
 
-{
-	my $heap = $heap_4a->clone;
+# Wait, we're supposed to re-use the heap???
+say "**** 4A LOWER";
+
+#{
+#my $heap = $heap_4a->clone;
+#my @table = ();
+
+	$heap->coalesce();
+	$heap->free(0x38);
+
+	say for $heap->tell(@table);
+	hexdump $heap;
 }
