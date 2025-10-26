@@ -114,20 +114,21 @@ sub tell ($heap)
 			# Print Size/Status
 			if ($addr == $init) {
 				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s%s  %d/%d%d",
-					$addr, '', '', '└─────┘', $size, $pbit, $abit;
+					$addr, '', '', $abit ? '└─────┘' : '└ ─ ─ ┘', $size, $pbit, $abit;
 				next;
 			}
 			if ($addr + 2 == $STOP) {
 				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s%s",
-					'', '', '', '┌─────┐';
+					'', '', '', $abit ? '┌─────┐' : '┌ ─ ─ ┐';
 				next;
 			}
+			my $vbar = $abit ? '│' : '┆';
 			if ($addr % 4) {
-				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s│%5s│",
-					'', '', '', '';
+				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s%s%5s%s",
+					'', '', '', $vbar, '', $vbar;
 			} else {
-				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s│%5s│",
-					$addr, '', '', '';
+				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s%s%5s%s",
+					$addr, '', '', $vbar, '', $vbar;
 			}
 		}
 		continue {
