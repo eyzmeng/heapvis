@@ -339,6 +339,14 @@ sub hexdump {
 	close $dumper;
 }
 
+# They are the same never mind
+my $heap_1a = CSAPP::Heap->new(0xC0)->init(qw(
+	END 16/10 16/01 16/11 40/10 32/01 40/10 16/01 8/10 END
+));
+my $heap_1b = CSAPP::Heap->new(0xC0)->init(qw(
+	END 16/10 16/01 16/11 40/10 32/01 40/10 16/01 8/10 END
+));
+# In the block starting at 0xA4, thers is a typo (8/10 instead of 8/00)
 my $heap_4a = CSAPP::Heap->new(0xC0)->init(qw(
 	END 16/11 32/11 16/11 8/10 56/01 32/10 8/00 16/01 END
 ));
@@ -358,7 +366,7 @@ say "**** 4A UPPER";
 	my $p8 = $heap->alloc(12);
 	push @table, p8 => $p8;
 	print "p8 = alloc(12);\n";
-	print sprintf("p8 = 0x_%02x", $p7), "\n";
+	print sprintf("p8 = 0x_%02x", $p8), "\n";
 
 	print +("=" x 80), "\n";
 	say for $heap->tell(@table);
@@ -374,6 +382,49 @@ say "**** 4A LOWER";
 
 	$heap->coalesce();
 	$heap->free(0x38);
+
+	say for $heap->tell(@table);
+	hexdump $heap;
+}
+
+say "**** 1A UPPER";
+
+{
+	my $heap = $heap_1a->clone;
+	my @table = ();
+	say for $heap->tell(@table);
+	hexdump $heap;
+
+	$heap->free(0x18);
+	$heap->free(0x60);
+	print "Pre coalescence\n";  # why does that weirdly sound like prepubescent...
+	print +("=" x 80), "\n";
+	say for $heap->tell(@table);
+	hexdump $heap;
+
+	$heap->coalesce();
+
+	print "Post coalescence\n";
+	print +("=" x 80), "\n";
+	say for $heap->tell(@table);
+	hexdump $heap;
+
+say "**** 1A LOWER";
+
+	my $p7 = $heap->alloc(18);
+	push @table, p7 => $p7;
+	print "p7 = alloc(18));\n";
+	print sprintf("p7 = 0x_%02x", $p7), "\n";
+
+	my $p8 = $heap->alloc(12);
+	push @table, p8 => $p8;
+	print "p8 = alloc(12);\n";
+	print sprintf("p8 = 0x_%02x", $p8), "\n";
+
+	my $p9 = $heap->alloc(8);
+	push @table, p9 => $p9;
+	print "p9 = alloc(8);\n";
+	print sprintf("p9 = 0x_%02x", $p9), "\n";
 
 	say for $heap->tell(@table);
 	hexdump $heap;
