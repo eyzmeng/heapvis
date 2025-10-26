@@ -83,11 +83,12 @@ sub init ($heap, @chnks)
 #
 # @><====>@> =======
 #
-sub tell ($heap)
+sub tell ($heap, @table)
 {
 	my @buf;
 	my ($addr, $word, $size, $pbit, $abit, $caps);
 	my ($wd_addr, $ab_pad);
+	my %symbol;
 
 	$caps = length($$heap);
 	$addr = 0;
@@ -97,6 +98,9 @@ sub tell ($heap)
 	$wd_addr = length(sprintf "%X", $caps);
 	$wd_addr = 2 if $wd_addr < 2;
 	$ab_pad = ($wd_addr < 6 ? 8 - $wd_addr : 2);
+
+	# Build symbol table
+	%symbol = reverse @table;
 
 	while ($addr < $caps) {
 		$size = $heap->GETSIZ($addr);
@@ -142,8 +146,11 @@ sub tell ($heap)
 			my $vbar = $abit ? '│' : '┆';
 			# Print payload address for convenience
 			if ($addr == $init + 4) {
-				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%0${wd_addr}X %s%5s%s",
-					$addr, '', $addr, $vbar, '', $vbar;
+				# ALSO, if we happen to equal some guy's memory,
+				# now is the time to display them :)
+				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%0${wd_addr}X %s%5s%s%s",
+					$addr, '', $addr, $vbar, '', $vbar, exists $symbol{$addr}
+						? " =$symbol{$addr}=" : '';
 			}
 			elsif ($addr % 4) {
 				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s %s%5s%s",
@@ -338,14 +345,16 @@ my $heap_4a = CSAPP::Heap->new(0xC0)->init(qw(
 
 {
 	my $heap = $heap_4a->clone;
+	my @table = ();
 	$heap->free(0x50);
 
 	my $p7 = $heap->alloc(18);
+	push @table, p7 => $p7;
 	print "p7 = alloc(18));\n";
 	print sprintf("p7 = 0x_%02x", $p7), "\n";
 
 	print +("=" x 80), "\n";
-	say for $heap->tell;
+	say for $heap->tell(@table);
 	hexdump $heap;
 }
 
