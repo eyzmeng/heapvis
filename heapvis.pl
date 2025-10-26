@@ -75,7 +75,7 @@ sub init ($heap, @chnks)
 sub tell ($heap)
 {
 	my @buf;
-	my ($addr, $word, $size, $pbit, $abit, $nbit, $caps);
+	my ($addr, $word, $size, $pbit, $abit, $caps);
 	my ($wd_addr, $ab_pad);
 
 	$caps = length($$heap);
@@ -89,7 +89,6 @@ sub tell ($heap)
 
 	while ($addr < $caps) {
 		$size = $heap->GETSIZ($addr);
-		print "m[$addr] = $size", "\n";
 		if (!$size) {
 			if ($addr == 0) {
 				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s START", $addr, '', '';
@@ -107,8 +106,11 @@ sub tell ($heap)
 		}
 		my $init = $addr;
 		my $STOP = $addr + $size;
+
+		if ($pbit ^ (my $bad = $heap->ISPLNK($init))) {
+			carp(sprintf("warning: 0x%02X: p-bit should be %d, but found %d", $addr, $pbit, $bad));
+		}
 		$abit = $heap->ISALNK($init);
-		$nbit = $heap->ISALNK($STOP);
 
 		while ($addr < $STOP) {
 			# Print Size/Status
