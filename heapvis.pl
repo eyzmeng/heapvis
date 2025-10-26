@@ -333,7 +333,7 @@ sub hexdump {
 }
 
 my $heap_4a = CSAPP::Heap->new(0xC0)->init(qw(
-	END 16/11 32/11 16/11 8/10 56/01 32/10 8/10 16/01 END
+	END 16/11 32/11 16/11 8/10 56/01 32/10 8/00 16/01 END
 ));
 
 {
@@ -346,6 +346,7 @@ my $heap_4a = CSAPP::Heap->new(0xC0)->init(qw(
 
 	print +("=" x 80), "\n";
 	say for $heap->tell;
+	hexdump $heap;
 }
 
 {
