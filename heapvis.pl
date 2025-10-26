@@ -36,11 +36,14 @@ sub init ($heap, @chnks)
 			$heap->SET($addr, 1);
 			$size = 4;
 		}
-		elsif ($chunk =~ m!([0-9]+)/([01])([01])!) {
+		elsif ($chunk =~ m!\A([0-9]+)/([01])([01])\z!) {
 			($size, $pbit, $abit) = ($1, $2, $3);
 			$heap->SETSIZ($addr, $size);
 			$heap->MKPLNK($addr, $pbit);
 			$heap->MKALNK($addr, $abit);
+		}
+		else {
+			croak ("bad block spec: $chunk");
 		}
 	}
 	continue { $addr += $size }
@@ -75,7 +78,7 @@ sub tell ($heap)
 	my ($addr, $word, $size, $pbit, $abit, $nbit, $caps);
 	my ($wd_addr, $ab_pad);
 
-	$caps = length($heap);
+	$caps = length($$heap);
 	$addr = 0;
 	$pbit = 0;
 
@@ -96,8 +99,9 @@ sub tell ($heap)
 				next;
 			}
 			else {
-				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s%s",
-					$addr, '', '', $_  foreach '@@@@@@@', '  END';
+				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s@@@@@@@", $addr, '', '';
+				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s  END", '', '', '';
+				push @buf, sprintf "%0${wd_addr}X", $addr + 4;
 				last;
 			}
 		}
@@ -110,7 +114,7 @@ sub tell ($heap)
 			# Print Size/Status
 			if ($addr == $init) {
 				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s%s  %d/%d%d",
-					$addr, '', '', '└─────┘', $size, $abit, $pbit;
+					$addr, '', '', '└─────┘', $size, $pbit, $abit;
 				next;
 			}
 			if ($addr + 2 == $STOP) {
@@ -127,6 +131,7 @@ sub tell ($heap)
 			}
 		}
 		continue {
+			$pbit = $abit;
 			$addr = $addr + 2
 		}
 	}
@@ -151,7 +156,7 @@ use v5.36;
 use open ':std', ':encoding(UTF-8)';
 
 my $heap = CSAPP::Heap->new(0xC0);
-$heap->init(qw( END 16/11 32/11 16/11 8/10 56/01 32/10 16/01 END ));
+$heap->init(qw( END 16/11 32/11 16/11 8/10 56/01 32/10 16/01 8/10 END ));
 
 say for $heap->tell();
 
