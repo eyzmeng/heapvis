@@ -10,7 +10,7 @@ sub new ($class, $size) {
 	$size % 4 and croak("bad heap size: $size");
 	bless \("\0" x $size), $class
 }
-sub copy ($heap) {
+sub clone ($heap) {
 	my $copy = (ref $heap)->new(length $$heap);
 	$$copy = $$heap;
 	$copy
@@ -342,7 +342,7 @@ print sprintf "You had A piece of %02X\n", $mem;
 #say for $heap->tell();
 #hexdump $heap;
 
-my $other = $heap->copy();
+my $other = $heap->clone();
 
 $heap->imfree($mem);
 say for $heap->tell();
