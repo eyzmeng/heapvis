@@ -10,6 +10,11 @@ sub new ($class, $size) {
 	$size % 4 and croak("bad heap size: $size");
 	bless \("\0" x $size), $class
 }
+sub copy ($heap) {
+	my $copy = (ref $heap)->new(length $$heap);
+	$$copy = $$heap;
+	$copy
+}
 
 sub _BBD ($heap, $i) {
 	my $n = length($$heap);
@@ -162,11 +167,13 @@ sub alloc ($heap, $need)
 	# Round up, for double-word alignment
 	my $need_size = ($need + 7) & ~7;
 
-	my ($head, $caps, $size, $busy);
-	$caps = length($$heap) - 4;
-
 	my ($best_head, $best_size);
 	$best_head = 0;
+
+
+{
+	my ($head, $caps, $size, $busy);
+	$caps = length($$heap) - 4;
 
 	for ($head = 4; $head < $caps; $head += $size) {
 		$size = $heap->GETSIZ($head);
@@ -179,13 +186,16 @@ sub alloc ($heap, $need)
 			}
 		}
 	}
+}
 
 	$best_head or return 0;
 
 	# Split free block, if needed
+{
+	my $next_head = $best_head + $best_size;
 	if ($need_size < $best_size) {
 		my $free_head = $best_head + $need_size;
-		my $free_foot = $best_head + $best_size - 4;
+		my $free_foot = $next_head - 4;
 		my $free_size = $best_size - $need_size;
 
 		# Set header
@@ -198,21 +208,88 @@ sub alloc ($heap, $need)
 	}
 	# The free block was Devoured, so expunge prev link
 	else {
-		my $next_head;
 		$heap->MKPLNK($next_head, 1);
 	}
+}
 
 	$heap->SETSIZ($best_head, $need_size);
 	$heap->MKALNK($best_head, 1);
 	$best_head + 4;
 }
 
-sub free ($heap, $addr)
+#
+# Free + immediate coalescence (on homework)
+#
+sub imfree ($heap, $addr)
 {
+	my ($free_head, $free_foot, $free_size);
+	$heap->ISALNK($free_head = $addr - 4) or croak "Double free";
+	$free_size = $heap->GETSIZ($free_head);
+
+{
+	my ($head, $size);
+	for (
+		$head = $free_head + $free_size;
+		!$heap->ISALNK($head);
+		$head += $size
+	) {
+		$free_size += ($size = $heap->GETSIZ($head));  # read header
+	}
+
+	$free_foot = $head - 4;
+	# Destroy prev link from next header
+	$heap->MKPLNK($head, 0);
+
+	for (
+		$head = $free_head;
+		!$heap->ISPLNK($head);
+		$head -= $size
+	) {
+		$free_size += ($size = $heap->GET($head - 4)); # read footer
+	}
+
+	$free_head = $head;
 }
 
-sub coalesce ($heap)
+	$heap->SETSIZ($free_head, $free_size);
+	$heap->MKALNK($free_head, 0);
+	$heap->SET($free_foot, $free_size);
+}
+
+sub free ($heap, $addr)
 {
+	my ($busy_head, $busy_size, $next_head, $free_foot);
+	$busy_head = $addr - 4;
+	$heap->ISALNK($busy_head) or croak "Double free";
+
+	$busy_size = $heap->GETSIZ($busy_head);
+	$next_head = $busy_head + $busy_size;
+	$free_foot = $next_head - 4;
+
+	$heap->MKALNK($busy_head, 0);
+	$heap->SET($free_foot, $busy_size);
+	$heap->MKPLNK($next_head, 0);
+}
+
+sub coalesce ($heap, $addr = 0)
+{
+	my ($head, $size);
+
+	unless ($addr) {
+		my ($caps, $busy);
+		$caps = length($$heap);
+		for ($head = 4; $head < $caps; $head += $size) {
+			# NOTICE!!!  We grab size only after coalescence
+			# is completed; lest we risk stepping into part
+			# of a merged freed block.
+			$busy = $heap->ISALNK($head);
+			$heap->coalesce($head) if !$busy;
+			$size = $heap->GETSIZ($head);
+		}
+		return;
+	}
+
+	...
 }
 
 package main;
@@ -228,10 +305,25 @@ sub hexdump {
 my $heap = CSAPP::Heap->new(0xC0);
 $heap->init(qw( END 16/11 32/11 16/11 8/10 56/01 32/10 16/01 8/10 END ));
 
-say for $heap->tell();
-hexdump $heap;
+#say for $heap->tell();
+#hexdump $heap;
 
 my $mem = $heap->alloc(10);
 print sprintf "You had A piece of %02X\n", $mem;
+#say for $heap->tell();
+#hexdump $heap;
+
+my $other = $heap->copy();
+
+$heap->imfree($mem);
+say for $heap->tell();
+hexdump $heap;
+
+$heap = $other;
+$heap->free($mem);
+say for $heap->tell();
+hexdump $heap;
+
+$heap->coalesce();
 say for $heap->tell();
 hexdump $heap;
