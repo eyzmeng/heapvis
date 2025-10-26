@@ -91,15 +91,15 @@ sub tell ($heap)
 		$size = $heap->GETSIZ($addr);
 		if (!$size) {
 			if ($addr == 0) {
-				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s START", $addr, '', '';
-				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s@@@@@@@", '', '', '';
+				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s  START", $addr, '', '';
+				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s @@@@@@@", '', '', '';
 				$addr = $addr + 4;
 				$pbit = 1;
 				next;
 			}
 			else {
-				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s@@@@@@@", $addr, '', '';
-				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s  END", '', '', '';
+				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s @@@@@@@", $addr, '', '';
+				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s   END", '', '', '';
 				push @buf, sprintf "%0${wd_addr}X", $addr + 4;
 				last;
 			}
@@ -115,21 +115,26 @@ sub tell ($heap)
 		while ($addr < $STOP) {
 			# Print Size/Status
 			if ($addr == $init) {
-				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s%s  %d/%d%d",
-					$addr, '', '', $abit ? '└─────┘' : '└ ─ ─ ┘', $size, $pbit, $abit;
+				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%0${wd_addr}X %s  %d/%d%d",
+					$addr, '', $addr, $abit ? '└─────┘' : '└ ─ ─ ┘', $size, $pbit, $abit;
 				next;
 			}
 			if ($addr + 2 == $STOP) {
-				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s%s",
+				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s %s",
 					'', '', '', $abit ? '┌─────┐' : '┌ ─ ─ ┐';
 				next;
 			}
 			my $vbar = $abit ? '│' : '┆';
-			if ($addr % 4) {
-				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s%s%5s%s",
+			# Print payload address for convenience
+			if ($addr == $init + 4) {
+				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%0${wd_addr}X %s%5s%s",
+					$addr, '', $addr, $vbar, '', $vbar;
+			}
+			elsif ($addr % 4) {
+				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s %s%5s%s",
 					'', '', '', $vbar, '', $vbar;
 			} else {
-				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s%s%5s%s",
+				push @buf, sprintf "%0${wd_addr}X%${ab_pad}s%${wd_addr}s %s%5s%s",
 					$addr, '', '', $vbar, '', $vbar;
 			}
 		}
