@@ -278,7 +278,7 @@ sub coalesce ($heap, $addr = 0)
 	unless ($addr) {
 		my ($caps, $busy);
 		$caps = length($$heap);
-		for ($head = 4; $head < $caps; $head += $size) {
+		for ($head = 4; $head + 4 < $caps; $head += $size) {
 			# NOTICE!!!  We grab size only after coalescence
 			# is completed; lest we risk stepping into part
 			# of a merged freed block.
@@ -289,7 +289,36 @@ sub coalesce ($heap, $addr = 0)
 		return;
 	}
 
-	...
+	my ($free_head, $free_foot, $free_size);
+	!$heap->ISALNK($addr) or croak("Coalescing a busy block");
+	$free_head = $addr;
+	$free_size = $heap->GETSIZ($free_head);
+
+	for (
+		$head = $free_head + $free_size;
+		!$heap->ISALNK($head);
+		$head += $size
+	) {
+		$free_size += ($size = $heap->GETSIZ($head));  # read header
+	}
+
+	$free_foot = $head - 4;
+	# Destroy prev link from next header
+	$heap->MKPLNK($head, 0);
+
+	for (
+		$head = $free_head;
+		!$heap->ISPLNK($head);
+		$head -= $size
+	) {
+		$free_size += ($size = $heap->GET($head - 4)); # read footer
+	}
+
+	$free_head = $head;
+
+	$heap->SETSIZ($free_head, $free_size);
+	$heap->MKALNK($free_head, 0);
+	$heap->SET($free_foot, $free_size);
 }
 
 package main;
