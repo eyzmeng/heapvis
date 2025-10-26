@@ -126,7 +126,7 @@ sub tell ($heap)
 			}
 			if ($addr + 2 == $STOP) {
 				push @buf, sprintf "%${wd_addr}s%${ab_pad}s%${wd_addr}s %s",
-					'', '', '', $abit ? '┌─────┐' : '┌ ─ ─ ┐';
+					'', '', '', '┌─   ─┐';
 				next;
 			}
 			my $vbar = $abit ? '│' : '┆';
