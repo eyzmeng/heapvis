@@ -219,16 +219,19 @@ package main;
 use v5.36;
 use open ':std', ':encoding(UTF-8)';
 
+sub hexdump {
+	open my $dumper, '|od -Ax -tx4z -w16';
+	print $dumper ${ +shift };
+	close $dumper;
+}
+
 my $heap = CSAPP::Heap->new(0xC0);
 $heap->init(qw( END 16/11 32/11 16/11 8/10 56/01 32/10 16/01 8/10 END ));
 
 say for $heap->tell();
-
-say ((unpack "H*", $$heap) =~ s/(.{40})/$1\n/rg);
+hexdump $heap;
 
 my $mem = $heap->alloc(10);
 print sprintf "You had A piece of %02X\n", $mem;
 say for $heap->tell();
-open my $dumper, '|od -Ax -tx4z -w16';
-print $dumper $$heap;
-close $dumper;
+hexdump $heap;
